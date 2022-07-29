@@ -1,0 +1,40 @@
+variables:
+  PORT_NO: 5000
+
+build-job:
+  stage: build
+  tags:
+    - build
+  artifacts:
+    paths:
+      - target/
+  script:
+    - mvn package
+
+test-job:
+  stage: test
+  tags:
+    - test
+  script:
+    - mvn test
+
+deploy-prod:
+  stage: deploy
+  tags:
+    - deploy-prod
+  script:
+    - tmux kill-session -t 'devops-server' || true
+    - export PORT=$PORT_NO
+    - tmux new -s 'devops-server' -d 'sh target/bin/simplewebapp'
+
+deploy-heroku:
+  stage: deploy
+  script:
+    - apt update && apt install -y ruby git curl
+    - gem install --user-install dpl-heroku
+    - if which ruby > /dev/null && which gem > /dev/null; then PATH="$(ruby -r rubygems -e 'puts Gem.user_dir')/bin:$PATH"; fi
+    - dpl --provider=heroku --app=co319-simplewebapp --api-key=$heroku_api_key
+
+
+
+
